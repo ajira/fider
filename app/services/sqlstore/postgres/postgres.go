@@ -98,6 +98,8 @@ func (s Service) Init() {
 	bus.AddHandler(getUserByProvider)
 	bus.AddHandler(getAllUsers)
 
+	bus.AddHandler(addBusinessUnit)
+
 	bus.AddHandler(createTenant)
 	bus.AddHandler(getFirstTenant)
 	bus.AddHandler(getTenantByDomain)

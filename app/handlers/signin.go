@@ -81,10 +81,11 @@ func VerifySignInKey(kind enum.EmailVerificationKind) web.HandlerFunc {
 			}
 
 			user = &models.User{
-				Name:   result.Name,
-				Email:  result.Email,
-				Tenant: c.Tenant(),
-				Role:   enum.RoleAdministrator,
+				Name:         result.Name,
+				Email:        result.Email,
+				BusinessUnit: "Default",
+				Tenant:       c.Tenant(),
+				Role:         enum.RoleAdministrator,
 			}
 
 			if err = bus.Dispatch(c, &cmd.RegisterUser{User: user}); err != nil {
@@ -145,10 +146,11 @@ func CompleteSignInProfile() web.HandlerFunc {
 		}
 
 		user := &models.User{
-			Name:   input.Model.Name,
-			Email:  input.Model.Email,
-			Tenant: c.Tenant(),
-			Role:   enum.RoleVisitor,
+			Name:         input.Model.Name,
+			Email:        input.Model.Email,
+			BusinessUnit: input.Model.BusinessUnit,
+			Tenant:       c.Tenant(),
+			Role:         enum.RoleVisitor,
 		}
 		err = bus.Dispatch(c, &cmd.RegisterUser{User: user})
 		if err != nil {

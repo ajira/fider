@@ -46,11 +46,18 @@ type User struct {
 	Tenant        *Tenant         `json:"-"`
 	Email         string          `json:"-"`
 	Role          enum.Role       `json:"role"`
+	BusinessUnit  string          `json:"-"`
 	Providers     []*UserProvider `json:"-"`
 	AvatarBlobKey string          `json:"-"`
 	AvatarType    enum.AvatarType `json:"-"`
 	AvatarURL     string          `json:"avatarURL,omitempty"`
 	Status        enum.UserStatus `json:"status"`
+}
+
+type BusinessUnit struct {
+	ID     int     `json:"id"`
+	Name   string  `json:"name"`
+	Tenant *Tenant `json:"-"`
 }
 
 //HasProvider returns true if current user has registered with given provider
@@ -245,9 +252,10 @@ type EmailVerification struct {
 
 // CompleteProfile is the model used to complete user profile during email sign in
 type CompleteProfile struct {
-	Key   string `json:"key"`
-	Name  string `json:"name"`
-	Email string
+	Key          string `json:"key"`
+	Name         string `json:"name"`
+	BusinessUnit string `json:"businessUnit"`
+	Email        string
 }
 
 // UpdateUserSettings is the model used to update user's settings

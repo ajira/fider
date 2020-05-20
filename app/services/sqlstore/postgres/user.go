@@ -17,14 +17,15 @@ import (
 )
 
 type dbUser struct {
-	ID            sql.NullInt64  `db:"id"`
-	Name          sql.NullString `db:"name"`
-	Email         sql.NullString `db:"email"`
-	Tenant        *dbTenant      `db:"tenant"`
-	Role          sql.NullInt64  `db:"role"`
-	Status        sql.NullInt64  `db:"status"`
-	AvatarType    sql.NullInt64  `db:"avatar_type"`
-	AvatarBlobKey sql.NullString `db:"avatar_bkey"`
+	ID            sql.NullInt64   `db:"id"`
+	Name          sql.NullString  `db:"name"`
+	Email         sql.NullString  `db:"email"`
+	Tenant        *dbTenant       `db:"tenant"`
+	BuisnessUnit  *dbBusinessUnit `db:"business_unit"`
+	Role          sql.NullInt64   `db:"role"`
+	Status        sql.NullInt64   `db:"status"`
+	AvatarType    sql.NullInt64   `db:"avatar_type"`
+	AvatarBlobKey sql.NullString  `db:"avatar_bkey"`
 	Providers     []*dbUserProvider
 }
 
@@ -45,6 +46,7 @@ func (u *dbUser) toModel(ctx context.Context) *models.User {
 		Email:         u.Email.String,
 		Tenant:        u.Tenant.toModel(),
 		Role:          enum.Role(u.Role.Int64),
+		BusinessUnit:  u.BuisnessUnit.toModel().Name,
 		Providers:     make([]*models.UserProvider, len(u.Providers)),
 		Status:        enum.UserStatus(u.Status.Int64),
 		AvatarType:    avatarType,
@@ -274,9 +276,14 @@ func registerUser(ctx context.Context, c *cmd.RegisterUser) error {
 		now := time.Now()
 		c.User.Status = enum.UserActive
 		c.User.Email = strings.ToLower(strings.TrimSpace(c.User.Email))
+		businessUnitByName := &cmd.GetBusinessUnitByName{Name: c.User.BusinessUnit}
+		if err := getBusinessUnitByName(ctx, businessUnitByName); err != nil {
+			return errors.Wrap(err, "failed to register new user")
+		}
+
 		if err := trx.Get(&c.User.ID,
-			"INSERT INTO users (name, email, created_at, tenant_id, role, status, avatar_type, avatar_bkey) VALUES ($1, $2, $3, $4, $5, $6, $7, '') RETURNING id",
-			c.User.Name, c.User.Email, now, tenant.ID, c.User.Role, enum.UserActive, enum.AvatarTypeGravatar); err != nil {
+			"INSERT INTO users (name, email, created_at, tenant_id, business_unit_id, role, status, avatar_type, avatar_bkey) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '') RETURNING id",
+			c.User.Name, c.User.Email, now, tenant.ID, businessUnitByName.Result.ID, c.User.Role, enum.UserActive, enum.AvatarTypeGravatar); err != nil {
 			return errors.Wrap(err, "failed to register new user")
 		}
 
@@ -384,7 +391,7 @@ func getAllUsers(ctx context.Context, q *query.GetAllUsers) error {
 
 func queryUser(ctx context.Context, trx *dbx.Trx, filter string, args ...interface{}) (*models.User, error) {
 	user := dbUser{}
-	sql := fmt.Sprintf("SELECT id, name, email, tenant_id, role, status, avatar_type, avatar_bkey FROM users WHERE status != %d AND ", enum.UserDeleted)
+	sql := fmt.Sprintf("SELECT id, name, email, tenant_id, business_unit_id, role, status, avatar_type, avatar_bkey FROM users WHERE status != %d AND ", enum.UserDeleted)
 	err := trx.Get(&user, sql+filter, args...)
 	if err != nil {
 		return nil, err

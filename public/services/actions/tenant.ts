@@ -54,10 +54,11 @@ export const signIn = async (email: string): Promise<Result> => {
   });
 };
 
-export const completeProfile = async (key: string, name: string): Promise<Result> => {
+export const completeProfile = async (key: string, name: string, businessUnit: string): Promise<Result> => {
   return await http.post("/_api/signin/complete", {
     key,
-    name
+    name,
+    businessUnit
   });
 };
 

@@ -7,6 +7,7 @@ import { actions, Failure, querystring, Fider } from "@fider/services";
 
 interface CompleteSignInProfilePageState {
   name: string;
+  businessUnit: string;
   error?: Failure;
 }
 
@@ -17,12 +18,14 @@ export default class CompleteSignInProfilePage extends React.Component<HomePageP
     super(props);
     this.key = querystring.get("k");
     this.state = {
-      name: ""
+      name: "",
+      businessUnit: ""
     };
   }
 
   private submit = async () => {
-    const result = await actions.completeProfile(this.key, this.state.name);
+    const result = await actions.completeProfile(this.key, this.state.name, this.state.businessUnit);
+    console.log(result)
     if (result.ok) {
       location.href = "/";
     } else if (result.error) {
@@ -32,6 +35,10 @@ export default class CompleteSignInProfilePage extends React.Component<HomePageP
 
   private setName = (name: string) => {
     this.setState({ name });
+  };
+
+  private setBusinessUnit = (businessUnit: string) => {
+    this.setState({ businessUnit });
   };
 
   private noop = () => {
@@ -51,11 +58,17 @@ export default class CompleteSignInProfilePage extends React.Component<HomePageP
                 onChange={this.setName}
                 maxLength={100}
                 placeholder="Name"
-                suffix={
-                  <Button type="submit" onClick={this.submit} color="positive" disabled={this.state.name === ""}>
-                    Submit
-                  </Button>
-                }
+              />
+              <Input
+              field = "name"
+              onChange = {this.setBusinessUnit}
+              maxLength={100}
+              placeholder="Ajira"
+              suffix={
+                <Button type="submit" onClick={this.submit} color="positive" disabled={this.state.name === ""}>
+                  Submit
+                </Button>
+              }
               />
             </Form>
           </Modal.Content>

@@ -28,6 +28,7 @@ type dbPost struct {
 	Description    string         `db:"description"`
 	CreatedAt      time.Time      `db:"created_at"`
 	User           *dbUser        `db:"user"`
+	Visibility     int            `db:"visibility"`
 	HasVoted       bool           `db:"has_voted"`
 	VotesCount     int            `db:"votes_count"`
 	CommentsCount  int            `db:"comments_count"`
@@ -56,6 +57,7 @@ func (i *dbPost) toModel(ctx context.Context) *models.Post {
 		VotesCount:    i.VotesCount,
 		CommentsCount: i.CommentsCount,
 		Status:        enum.PostStatus(i.Status),
+		Visbility:     enum.PostVisbility(i.Visibility),
 		User:          i.User.toModel(ctx),
 		Tags:          i.Tags,
 	}

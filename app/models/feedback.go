@@ -8,19 +8,20 @@ import (
 
 //Post represents an post on a tenant board
 type Post struct {
-	ID            int             `json:"id"`
-	Number        int             `json:"number"`
-	Title         string          `json:"title"`
-	Slug          string          `json:"slug"`
-	Description   string          `json:"description"`
-	CreatedAt     time.Time       `json:"createdAt"`
-	User          *User           `json:"user"`
-	HasVoted      bool            `json:"hasVoted"`
-	VotesCount    int             `json:"votesCount"`
-	CommentsCount int             `json:"commentsCount"`
-	Status        enum.PostStatus `json:"status"`
-	Response      *PostResponse   `json:"response,omitempty"`
-	Tags          []string        `json:"tags"`
+	ID            int                `json:"id"`
+	Number        int                `json:"number"`
+	Title         string             `json:"title"`
+	Slug          string             `json:"slug"`
+	Description   string             `json:"description"`
+	CreatedAt     time.Time          `json:"createdAt"`
+	User          *User              `json:"user"`
+	Visbility     enum.PostVisbility `json:"visbility"`
+	HasVoted      bool               `json:"hasVoted"`
+	VotesCount    int                `json:"votesCount"`
+	CommentsCount int                `json:"commentsCount"`
+	Status        enum.PostStatus    `json:"status"`
+	Response      *PostResponse      `json:"response,omitempty"`
+	Tags          []string           `json:"tags"`
 }
 
 //VoteUser represents a user that voted on a post

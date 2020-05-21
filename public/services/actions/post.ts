@@ -113,9 +113,10 @@ export const updatePost = async (
   postNumber: number,
   title: string,
   description: string,
-  attachments: ImageUpload[]
+  attachments: ImageUpload[],
+  isPublic: boolean
 ): Promise<Result> => {
   return http
-    .put(`/api/v1/posts/${postNumber}`, { title, description, attachments })
+    .put(`/api/v1/posts/${postNumber}`, { title, description, attachments, isPublic })
     .then(http.event("post", "update"));
 };

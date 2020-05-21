@@ -63,7 +63,8 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
       this.props.post.number,
       this.state.newTitle,
       this.state.newDescription,
-      this.state.attachments
+      this.state.attachments,
+      this.props.post.isPublic
     );
     if (result.ok) {
       location.reload();

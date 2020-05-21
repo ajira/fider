@@ -21,7 +21,7 @@ type dbUser struct {
 	Name          sql.NullString  `db:"name"`
 	Email         sql.NullString  `db:"email"`
 	Tenant        *dbTenant       `db:"tenant"`
-	BuisnessUnit  *dbBusinessUnit `db:"business_unit"`
+	BusinessUnit  *dbBusinessUnit `db:"business_unit"`
 	Role          sql.NullInt64   `db:"role"`
 	Status        sql.NullInt64   `db:"status"`
 	AvatarType    sql.NullInt64   `db:"avatar_type"`
@@ -46,7 +46,7 @@ func (u *dbUser) toModel(ctx context.Context) *models.User {
 		Email:         u.Email.String,
 		Tenant:        u.Tenant.toModel(),
 		Role:          enum.Role(u.Role.Int64),
-		BusinessUnit:  u.BuisnessUnit.toModel().Name,
+		BusinessUnit:  u.BusinessUnit.toModel(),
 		Providers:     make([]*models.UserProvider, len(u.Providers)),
 		Status:        enum.UserStatus(u.Status.Int64),
 		AvatarType:    avatarType,
@@ -276,7 +276,7 @@ func registerUser(ctx context.Context, c *cmd.RegisterUser) error {
 		now := time.Now()
 		c.User.Status = enum.UserActive
 		c.User.Email = strings.ToLower(strings.TrimSpace(c.User.Email))
-		businessUnitByName := &cmd.GetBusinessUnitByName{Name: c.User.BusinessUnit}
+		businessUnitByName := &cmd.GetBusinessUnitByName{Name: c.User.BusinessUnit.Name}
 		if err := getBusinessUnitByName(ctx, businessUnitByName); err != nil {
 			return errors.Wrap(err, "failed to register new user")
 		}

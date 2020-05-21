@@ -83,7 +83,7 @@ func VerifySignInKey(kind enum.EmailVerificationKind) web.HandlerFunc {
 			user = &models.User{
 				Name:         result.Name,
 				Email:        result.Email,
-				BusinessUnit: "Default",
+				BusinessUnit: &models.BusinessUnit{Name: "Default", Tenant: c.Tenant()},
 				Tenant:       c.Tenant(),
 				Role:         enum.RoleAdministrator,
 			}
@@ -148,7 +148,7 @@ func CompleteSignInProfile() web.HandlerFunc {
 		user := &models.User{
 			Name:         input.Model.Name,
 			Email:        input.Model.Email,
-			BusinessUnit: input.Model.BusinessUnit,
+			BusinessUnit: &models.BusinessUnit{Name: input.Model.BusinessUnit, Tenant: c.Tenant()},
 			Tenant:       c.Tenant(),
 			Role:         enum.RoleVisitor,
 		}

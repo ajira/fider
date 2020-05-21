@@ -46,7 +46,7 @@ type User struct {
 	Tenant        *Tenant         `json:"-"`
 	Email         string          `json:"-"`
 	Role          enum.Role       `json:"role"`
-	BusinessUnit  string          `json:"-"`
+	BusinessUnit  *BusinessUnit   `json:"-"`
 	Providers     []*UserProvider `json:"-"`
 	AvatarBlobKey string          `json:"-"`
 	AvatarType    enum.AvatarType `json:"-"`

@@ -3,6 +3,7 @@ import { PostStatus, Post } from "@fider/models";
 import { actions, navigator, Failure } from "@fider/services";
 import { Form, Modal, Button, List, ListItem, TextArea } from "@fider/components";
 import { useFider } from "@fider/hooks";
+import { FaGlobe, FaUserShield } from 'react-icons/fa';
 
 interface ModerationPanelProps {
   post: Post;
@@ -13,9 +14,24 @@ export const ModerationPanel = (props: ModerationPanelProps) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [text, setText] = useState("");
   const [error, setError] = useState<Failure>();
+  const [isPostPublic, togglePostVisibility] = useState(props.post.isPublic)
 
   const hideModal = async () => setShowConfirmation(false);
   const showModal = async () => setShowConfirmation(true);
+  const changePostVisbility = async () => {
+    const response = await actions.updatePost(
+      props.post.number,
+      props.post.title,
+      props.post.description,
+      props.post.attachments,
+      !isPostPublic
+    );
+    if (response.ok) {
+      togglePostVisibility(!isPostPublic)
+    } else if (response.error) {
+      setError(response.error);
+    }
+  };
 
   const handleDelete = async () => {
     const response = await actions.deletePost(props.post.number, text);
@@ -65,6 +81,17 @@ export const ModerationPanel = (props: ModerationPanelProps) => {
       {modal}
       <span className="subtitle">Moderation</span>
       <List>
+      <ListItem>
+          {isPostPublic ?
+            <Button size="tiny" fluid={true} onClick={changePostVisbility}>
+              <FaUserShield/> Make Post Private
+        </Button>
+            :
+            <Button size="tiny" fluid={true} onClick={changePostVisbility}>
+              <FaGlobe/> Make Post Public
+          </Button>
+          }
+        </ListItem>
         <ListItem>
           <Button color="danger" size="tiny" fluid={true} onClick={showModal}>
             Delete

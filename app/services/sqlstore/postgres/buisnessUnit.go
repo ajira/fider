@@ -16,6 +16,10 @@ type dbBusinessUnit struct {
 }
 
 func (c *dbBusinessUnit) toModel() *models.BusinessUnit {
+	if c == nil {
+		return nil
+	}
+
 	businessUnit := &models.BusinessUnit{
 		ID:     c.ID,
 		Name:   c.Name,

@@ -16,6 +16,7 @@ type UpdatePost struct {
 	Post        *models.Post
 	Title       string
 	Description string
+	IsPublic    bool
 
 	Result *models.Post
 }

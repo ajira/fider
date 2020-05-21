@@ -9,6 +9,7 @@ import (
 
 	"github.com/getfider/fider/app/models/enum"
 	"github.com/getfider/fider/app/models/query"
+	"github.com/getfider/fider/app/pkg/log"
 	"github.com/gosimple/slug"
 	"github.com/lib/pq"
 
@@ -28,7 +29,7 @@ type dbPost struct {
 	Description    string         `db:"description"`
 	CreatedAt      time.Time      `db:"created_at"`
 	User           *dbUser        `db:"user"`
-	Visibility     int            `db:"visibility"`
+	IsPublic       bool           `db:"is_public"`
 	HasVoted       bool           `db:"has_voted"`
 	VotesCount     int            `db:"votes_count"`
 	CommentsCount  int            `db:"comments_count"`
@@ -57,7 +58,7 @@ func (i *dbPost) toModel(ctx context.Context) *models.Post {
 		VotesCount:    i.VotesCount,
 		CommentsCount: i.CommentsCount,
 		Status:        enum.PostStatus(i.Status),
-		Visbility:     enum.PostVisbility(i.Visibility),
+		IsPublic:      i.IsPublic,
 		User:          i.User.toModel(ctx),
 		Tags:          i.Tags,
 	}
@@ -122,7 +123,8 @@ var (
 													SELECT p.id, 
 																p.number, 
 																p.title, 
-																p.slug, 
+																p.slug,
+																p.is_public,
 																p.description, 
 																p.created_at,
 																COALESCE(agg_s.all, 0) as votes_count,
@@ -179,8 +181,7 @@ func postIsReferenced(ctx context.Context, q *query.PostIsReferenced) error {
 			SELECT 1 FROM posts p 
 			INNER JOIN posts o
 			ON o.tenant_id = p.tenant_id
-			AND o.id = p.original_id
-			WHERE p.tenant_id = $1
+			AND o.id = p.original_id `+getPostVisibilityCondition(user)+`WHERE p.tenant_id = $1
 			AND o.id = $2`, tenant.ID, q.PostID)
 		if err != nil {
 			return errors.Wrap(err, "failed to check if post is referenced")
@@ -205,8 +206,7 @@ func setPostResponse(ctx context.Context, c *cmd.SetPostResponse) error {
 		_, err := trx.Execute(`
 		UPDATE posts 
 		SET response = $3, original_id = NULL, response_date = $4, response_user_id = $5, status = $6 
-		WHERE id = $1 and tenant_id = $2
-		`, c.Post.ID, tenant.ID, c.Text, respondedAt, user.ID, c.Status)
+		WHERE id = $1 and tenant_id = $2 `+getPostVisibilityCondition(user), c.Post.ID, tenant.ID, c.Text, respondedAt, user.ID, c.Status)
 		if err != nil {
 			return errors.Wrap(err, "failed to update post's response")
 		}
@@ -229,7 +229,7 @@ func markPostAsDuplicate(ctx context.Context, c *cmd.MarkPostAsDuplicate) error 
 		}
 
 		var users []*dbUser
-		err := trx.Select(&users, "SELECT user_id AS id FROM post_votes WHERE post_id = $1 AND tenant_id = $2", c.Post.ID, tenant.ID)
+		err := trx.Select(&users, "SELECT user_id AS id FROM post_votes WHERE post_id = $1 AND tenant_id = $2 "+getPostVisibilityCondition(user), c.Post.ID, tenant.ID)
 		if err != nil {
 			return errors.Wrap(err, "failed to get votes of post with id '%d'", c.Post.ID)
 		}
@@ -244,8 +244,7 @@ func markPostAsDuplicate(ctx context.Context, c *cmd.MarkPostAsDuplicate) error 
 		_, err = trx.Execute(`
 		UPDATE posts 
 		SET response = '', original_id = $3, response_date = $4, response_user_id = $5, status = $6 
-		WHERE id = $1 and tenant_id = $2
-		`, c.Post.ID, tenant.ID, c.Original.ID, respondedAt, user.ID, enum.PostDuplicate)
+		WHERE id = $1 and tenant_id = $2 `+getPostVisibilityCondition(user), c.Post.ID, tenant.ID, c.Original.ID, respondedAt, user.ID, enum.PostDuplicate)
 		if err != nil {
 			return errors.Wrap(err, "failed to update post's response")
 		}
@@ -275,7 +274,7 @@ func countPostPerStatus(ctx context.Context, q *query.CountPostPerStatus) error 
 
 		q.Result = make(map[enum.PostStatus]int)
 		stats := []*dbStatusCount{}
-		err := trx.Select(&stats, "SELECT status, COUNT(*) AS count FROM posts WHERE tenant_id = $1 GROUP BY status", tenant.ID)
+		err := trx.Select(&stats, "SELECT status, COUNT(*) AS count FROM posts p WHERE tenant_id = $1 "+getPostVisibilityCondition(user)+" GROUP BY status", tenant.ID)
 		if err != nil {
 			return errors.Wrap(err, "failed to count posts per status")
 		}
@@ -291,9 +290,10 @@ func addNewPost(ctx context.Context, c *cmd.AddNewPost) error {
 	return using(ctx, func(trx *dbx.Trx, tenant *models.Tenant, user *models.User) error {
 		var id int
 		err := trx.Get(&id,
-			`INSERT INTO posts (title, slug, number, description, tenant_id, user_id, created_at, status) 
-			 VALUES ($1, $2, (SELECT COALESCE(MAX(number), 0) + 1 FROM posts p WHERE p.tenant_id = $4), $3, $4, $5, $6, 0) 
-			 RETURNING id`, c.Title, slug.Make(c.Title), c.Description, tenant.ID, user.ID, time.Now())
+			`INSERT INTO posts (title, slug, number, description, tenant_id, business_unit_id, is_public, user_id, created_at, status) 
+			 VALUES ($1, $2, (SELECT COALESCE(MAX(number), 0) + 1 FROM posts p WHERE p.tenant_id = $4), $3, $4, $5, $6, $7, $8, 0) 
+			 RETURNING id`, c.Title, slug.Make(c.Title), c.Description, tenant.ID, user.BusinessUnit.ID, false, user.ID, time.Now())
+
 		if err != nil {
 			return errors.Wrap(err, "failed add new post")
 		}
@@ -314,8 +314,8 @@ func addNewPost(ctx context.Context, c *cmd.AddNewPost) error {
 
 func updatePost(ctx context.Context, c *cmd.UpdatePost) error {
 	return using(ctx, func(trx *dbx.Trx, tenant *models.Tenant, user *models.User) error {
-		_, err := trx.Execute(`UPDATE posts SET title = $1, slug = $2, description = $3 
-													 WHERE id = $4 AND tenant_id = $5`, c.Title, slug.Make(c.Title), c.Description, c.Post.ID, tenant.ID)
+		_, err := trx.Execute(`UPDATE posts SET title = $1, slug = $2, description = $3, is_public = $6
+													WHERE id = $4 AND tenant_id = $5 `+getPostVisibilityCondition(user), c.Title, slug.Make(c.Title), c.Description, c.Post.ID, tenant.ID, c.IsPublic)
 		if err != nil {
 			return errors.Wrap(err, "failed update post")
 		}
@@ -331,6 +331,7 @@ func updatePost(ctx context.Context, c *cmd.UpdatePost) error {
 
 func getPostByID(ctx context.Context, q *query.GetPostByID) error {
 	return using(ctx, func(trx *dbx.Trx, tenant *models.Tenant, user *models.User) error {
+		log.Info(ctx, "postById"+fmt.Sprintf("%+v", user))
 		post, err := querySinglePost(ctx, trx, buildPostQuery(user, "p.tenant_id = $1 AND p.id = $2"), tenant.ID, q.PostID)
 		if err != nil {
 			return errors.Wrap(err, "failed to get post with id '%d'", q.PostID)
@@ -353,6 +354,7 @@ func getPostBySlug(ctx context.Context, q *query.GetPostBySlug) error {
 
 func getPostByNumber(ctx context.Context, q *query.GetPostByNumber) error {
 	return using(ctx, func(trx *dbx.Trx, tenant *models.Tenant, user *models.User) error {
+		log.Info(ctx, fmt.Sprintf("%+v", user))
 		post, err := querySinglePost(ctx, trx, buildPostQuery(user, "p.tenant_id = $1 AND p.number = $2"), tenant.ID, q.Number)
 		if err != nil {
 			return errors.Wrap(err, "failed to get post with number '%d'", q.Number)
@@ -435,7 +437,6 @@ func querySinglePost(ctx context.Context, trx *dbx.Trx, query string, args ...in
 	if err := trx.Get(&post, query, args...); err != nil {
 		return nil, err
 	}
-
 	return post.toModel(ctx), nil
 }
 
@@ -448,5 +449,14 @@ func buildPostQuery(user *models.User, filter string) string {
 	if user != nil {
 		hasVotedSubQuery = fmt.Sprintf("(SELECT true FROM post_votes WHERE post_id = p.id AND user_id = %d)", user.ID)
 	}
-	return fmt.Sprintf(sqlSelectPostsWhere, tagCondition, hasVotedSubQuery, filter)
+	return fmt.Sprintf(sqlSelectPostsWhere, tagCondition, hasVotedSubQuery, filter+getPostVisibilityCondition(user))
+}
+
+func getPostVisibilityCondition(user *models.User) string {
+	if user == nil {
+		return `AND p.is_public = true`
+	} else if !user.IsCollaborator() {
+		return fmt.Sprintf(`AND (p.is_public = true or p.business_unit_id=%d)`, user.BusinessUnit.ID)
+	}
+	return ``
 }

@@ -1,10 +1,13 @@
 import { User } from "./identity";
+import { ImageUpload } from './settings';
 
 export interface Post {
   id: number;
   number: number;
   slug: string;
   title: string;
+  isPublic: boolean;
+  attachments: ImageUpload[];
   description: string;
   createdAt: string;
   status: string;

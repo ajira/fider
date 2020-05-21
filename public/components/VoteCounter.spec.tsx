@@ -22,6 +22,8 @@ beforeEach(() => {
       status: UserStatus.Active,
       avatarURL: "/avatars/letter/5/John"
     },
+    attachments: [],
+    isPublic: false,
     hasVoted: false,
     response: null,
     votesCount: 5,

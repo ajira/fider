@@ -1,1 +1,0 @@
-alter table posts add column visibility INT not null default 0;

@@ -100,6 +100,7 @@ func UpdatePost() web.HandlerFunc {
 				Post:        input.Post,
 				Title:       input.Model.Title,
 				Description: input.Model.Description,
+				IsPublic:    input.Model.IsPublic,
 			},
 			&cmd.SetAttachments{
 				Post:        input.Post,

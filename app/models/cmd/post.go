@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/getfider/fider/app/models"
 	"github.com/getfider/fider/app/models/enum"
 )
@@ -13,10 +15,11 @@ type AddNewPost struct {
 }
 
 type UpdatePost struct {
-	Post        *models.Post
-	Title       string
-	Description string
-	IsPublic    bool
+	Post                       *models.Post
+	Title                      string
+	Description                string
+	IsPublic                   bool
+	EstimatedDateForCompletion time.Time
 
 	Result *models.Post
 }

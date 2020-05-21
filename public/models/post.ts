@@ -13,6 +13,7 @@ export interface Post {
   status: string;
   user: User;
   hasVoted: boolean;
+  estimatedDateForCompletion: string;
   response: PostResponse | null;
   votesCount: number;
   commentsCount: number;

@@ -24,7 +24,8 @@ export const ModerationPanel = (props: ModerationPanelProps) => {
       props.post.title,
       props.post.description,
       props.post.attachments,
-      !isPostPublic
+      !isPostPublic,
+      props.post.estimatedDateForCompletion
     );
     if (response.ok) {
       togglePostVisibility(!isPostPublic)

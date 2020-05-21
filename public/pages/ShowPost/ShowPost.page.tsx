@@ -1,6 +1,8 @@
 import "./ShowPost.page.scss";
 
 import React from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 import { Comment, Post, Tag, Vote, ImageUpload } from "@fider/models";
 import { actions, Failure, Fider } from "@fider/services";
@@ -21,7 +23,7 @@ import {
   MultiImageUploader,
   ImageViewer
 } from "@fider/components";
-import { FaSave, FaTimes, FaEdit } from "react-icons/fa";
+import { FaSave, FaTimes, FaEdit, FaCalendarDay } from "react-icons/fa";
 import { ResponseForm } from "./components/ResponseForm";
 import { TagsPanel } from "./components/TagsPanel";
 import { NotificationsPanel } from "./components/NotificationsPanel";
@@ -41,6 +43,7 @@ interface ShowPostPageProps {
 interface ShowPostPageState {
   editMode: boolean;
   newTitle: string;
+  newEstimatedDateOfCompletion: string;
   attachments: ImageUpload[];
   newDescription: string;
   error?: Failure;
@@ -54,6 +57,7 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
       editMode: false,
       newTitle: this.props.post.title,
       newDescription: this.props.post.description,
+      newEstimatedDateOfCompletion: this.props.post.estimatedDateForCompletion,
       attachments: []
     };
   }
@@ -64,7 +68,8 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
       this.state.newTitle,
       this.state.newDescription,
       this.state.attachments,
-      this.props.post.isPublic
+      this.props.post.isPublic,
+      this.props.post.estimatedDateForCompletion
     );
     if (result.ok) {
       location.reload();
@@ -83,6 +88,10 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
     this.setState({ newDescription });
   };
 
+  private setNewEstimatedDateForCompletion = (date: Date) => {
+    this.setState({ newEstimatedDateOfCompletion: date.toDateString() });
+  };
+
   private setAttachments = (attachments: ImageUpload[]) => {
     this.setState({ attachments });
   };
@@ -96,7 +105,8 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
   };
 
   public render() {
-    return (
+    console.log(this.props.post)
+    return (  
       <div id="p-show-post" className="page container">
         <div className="header-col">
           <List>
@@ -109,8 +119,8 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
                     <Input field="title" maxLength={100} value={this.state.newTitle} onChange={this.setNewTitle} />
                   </Form>
                 ) : (
-                  <h1>{this.props.post.title}</h1>
-                )}
+                    <h1>{this.props.post.title}</h1>
+                  )}
 
                 <span className="info">
                   <Moment date={this.props.post.createdAt} /> &middot; <Avatar user={this.props.post.user} />{" "}
@@ -131,15 +141,27 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
                 previewMaxWidth={100}
                 onChange={this.setAttachments}
               />
+              <label>Estimated Date For Completion
+              <DatePicker selected={new Date(this.state.newEstimatedDateOfCompletion)} onChange={this.setNewEstimatedDateForCompletion}/>
+              </label>
             </Form>
           ) : (
-            <>
-              <MultiLineText className="description" text={this.props.post.description} style="simple" />
-              {this.props.attachments.map(x => (
-                <ImageViewer key={x} bkey={x} />
-              ))}
-            </>
-          )}
+              <>
+                <MultiLineText className="description" text={this.props.post.description} style="simple" />
+                {this.props.attachments.map(x => (
+                  <ImageViewer key={x} bkey={x} />
+                ))}
+                {
+                  this.state.newEstimatedDateOfCompletion != null &&
+                    (
+                    <>
+                    <span className="subtitle">Estimated Time Of Completion</span>
+                    <FaCalendarDay/>{new Date(this.state.newEstimatedDateOfCompletion).toDateString()}
+                    </>)
+                }
+
+              </>
+            )}
           <ShowPostResponse showUser={true} status={this.props.post.status} response={this.props.post.response} />
         </div>
 
@@ -165,17 +187,17 @@ export default class ShowPostPage extends React.Component<ShowPostPageProps, Sho
                   </ListItem>
                 </List>
               ) : (
-                <List key={1}>
-                  <ListItem>
-                    <Button className="edit" fluid={true} onClick={this.startEdit}>
-                      <FaEdit /> Edit
+                  <List key={1}>
+                    <ListItem>
+                      <Button className="edit" fluid={true} onClick={this.startEdit}>
+                        <FaEdit /> Edit
                     </Button>
-                  </ListItem>
-                  <ListItem>
-                    <ResponseForm post={this.props.post} />
-                  </ListItem>
-                </List>
-              )
+                    </ListItem>
+                    <ListItem>
+                      <ResponseForm post={this.props.post} />
+                    </ListItem>
+                  </List>
+                )
             ]}
 
           <TagsPanel post={this.props.post} tags={this.props.tags} />

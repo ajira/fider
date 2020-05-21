@@ -28,6 +28,7 @@ beforeEach(() => {
     response: null,
     votesCount: 5,
     commentsCount: 2,
+    estimatedDateForCompletion: new Date().toDateString(),
     tags: []
   };
 });

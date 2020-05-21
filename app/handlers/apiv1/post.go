@@ -97,10 +97,11 @@ func UpdatePost() web.HandlerFunc {
 				Folder: "attachments",
 			},
 			&cmd.UpdatePost{
-				Post:        input.Post,
-				Title:       input.Model.Title,
-				Description: input.Model.Description,
-				IsPublic:    input.Model.IsPublic,
+				Post:                       input.Post,
+				Title:                      input.Model.Title,
+				Description:                input.Model.Description,
+				IsPublic:                   input.Model.IsPublic,
+				EstimatedDateForCompletion: input.Model.EstimatedDateForCompletion,
 			},
 			&cmd.SetAttachments{
 				Post:        input.Post,

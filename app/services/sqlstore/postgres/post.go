@@ -22,28 +22,29 @@ import (
 )
 
 type dbPost struct {
-	ID             int            `db:"id"`
-	Number         int            `db:"number"`
-	Title          string         `db:"title"`
-	Slug           string         `db:"slug"`
-	Description    string         `db:"description"`
-	CreatedAt      time.Time      `db:"created_at"`
-	User           *dbUser        `db:"user"`
-	IsPublic       bool           `db:"is_public"`
-	HasVoted       bool           `db:"has_voted"`
-	VotesCount     int            `db:"votes_count"`
-	CommentsCount  int            `db:"comments_count"`
-	RecentVotes    int            `db:"recent_votes_count"`
-	RecentComments int            `db:"recent_comments_count"`
-	Status         int            `db:"status"`
-	Response       sql.NullString `db:"response"`
-	RespondedAt    dbx.NullTime   `db:"response_date"`
-	ResponseUser   *dbUser        `db:"response_user"`
-	OriginalNumber sql.NullInt64  `db:"original_number"`
-	OriginalTitle  sql.NullString `db:"original_title"`
-	OriginalSlug   sql.NullString `db:"original_slug"`
-	OriginalStatus sql.NullInt64  `db:"original_status"`
-	Tags           []string       `db:"tags"`
+	ID                         int            `db:"id"`
+	Number                     int            `db:"number"`
+	Title                      string         `db:"title"`
+	Slug                       string         `db:"slug"`
+	Description                string         `db:"description"`
+	CreatedAt                  time.Time      `db:"created_at"`
+	User                       *dbUser        `db:"user"`
+	IsPublic                   bool           `db:"is_public"`
+	EstimatedDateForCompletion dbx.NullTime   `db:"estimated_date_for_completion"`
+	HasVoted                   bool           `db:"has_voted"`
+	VotesCount                 int            `db:"votes_count"`
+	CommentsCount              int            `db:"comments_count"`
+	RecentVotes                int            `db:"recent_votes_count"`
+	RecentComments             int            `db:"recent_comments_count"`
+	Status                     int            `db:"status"`
+	Response                   sql.NullString `db:"response"`
+	RespondedAt                dbx.NullTime   `db:"response_date"`
+	ResponseUser               *dbUser        `db:"response_user"`
+	OriginalNumber             sql.NullInt64  `db:"original_number"`
+	OriginalTitle              sql.NullString `db:"original_title"`
+	OriginalSlug               sql.NullString `db:"original_slug"`
+	OriginalStatus             sql.NullInt64  `db:"original_status"`
+	Tags                       []string       `db:"tags"`
 }
 
 func (i *dbPost) toModel(ctx context.Context) *models.Post {
@@ -61,6 +62,10 @@ func (i *dbPost) toModel(ctx context.Context) *models.Post {
 		IsPublic:      i.IsPublic,
 		User:          i.User.toModel(ctx),
 		Tags:          i.Tags,
+	}
+
+	if i.EstimatedDateForCompletion.Valid {
+		post.EstimatedDateForCompletion = &i.EstimatedDateForCompletion.Time
 	}
 
 	if i.Response.Valid {
@@ -125,6 +130,7 @@ var (
 																p.title, 
 																p.slug,
 																p.is_public,
+																p.estimated_date_for_completion,
 																p.description, 
 																p.created_at,
 																COALESCE(agg_s.all, 0) as votes_count,
@@ -290,9 +296,9 @@ func addNewPost(ctx context.Context, c *cmd.AddNewPost) error {
 	return using(ctx, func(trx *dbx.Trx, tenant *models.Tenant, user *models.User) error {
 		var id int
 		err := trx.Get(&id,
-			`INSERT INTO posts (title, slug, number, description, tenant_id, business_unit_id, is_public, user_id, created_at, status) 
-			 VALUES ($1, $2, (SELECT COALESCE(MAX(number), 0) + 1 FROM posts p WHERE p.tenant_id = $4), $3, $4, $5, $6, $7, $8, 0) 
-			 RETURNING id`, c.Title, slug.Make(c.Title), c.Description, tenant.ID, user.BusinessUnit.ID, false, user.ID, time.Now())
+			`INSERT INTO posts (title, slug, number, description, tenant_id, business_unit_id, is_public, estimated_date_for_completion, user_id, created_at, status) 
+			 VALUES ($1, $2, (SELECT COALESCE(MAX(number), 0) + 1 FROM posts p WHERE p.tenant_id = $4), $3, $4, $5, $6, $7, $8, $9, 0) 
+			 RETURNING id`, c.Title, slug.Make(c.Title), c.Description, tenant.ID, user.BusinessUnit.ID, false, nil, user.ID, time.Now())
 
 		if err != nil {
 			return errors.Wrap(err, "failed add new post")
@@ -314,8 +320,8 @@ func addNewPost(ctx context.Context, c *cmd.AddNewPost) error {
 
 func updatePost(ctx context.Context, c *cmd.UpdatePost) error {
 	return using(ctx, func(trx *dbx.Trx, tenant *models.Tenant, user *models.User) error {
-		_, err := trx.Execute(`UPDATE posts SET title = $1, slug = $2, description = $3, is_public = $6
-													WHERE id = $4 AND tenant_id = $5 `+getPostVisibilityCondition(user), c.Title, slug.Make(c.Title), c.Description, c.Post.ID, tenant.ID, c.IsPublic)
+		_, err := trx.Execute(`UPDATE posts SET title = $1, slug = $2, description = $3, is_public = $6, estimated_date_for_completion= $7
+													WHERE id = $4 AND tenant_id = $5 `+getPostVisibilityCondition(user), c.Title, slug.Make(c.Title), c.Description, c.Post.ID, tenant.ID, c.IsPublic, c.EstimatedDateForCompletion)
 		if err != nil {
 			return errors.Wrap(err, "failed update post")
 		}

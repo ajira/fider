@@ -8,20 +8,21 @@ import (
 
 //Post represents an post on a tenant board
 type Post struct {
-	ID            int             `json:"id"`
-	Number        int             `json:"number"`
-	Title         string          `json:"title"`
-	Slug          string          `json:"slug"`
-	Description   string          `json:"description"`
-	CreatedAt     time.Time       `json:"createdAt"`
-	User          *User           `json:"user"`
-	IsPublic      bool            `json:"isPublic"`
-	HasVoted      bool            `json:"hasVoted"`
-	VotesCount    int             `json:"votesCount"`
-	CommentsCount int             `json:"commentsCount"`
-	Status        enum.PostStatus `json:"status"`
-	Response      *PostResponse   `json:"response,omitempty"`
-	Tags          []string        `json:"tags"`
+	ID                         int             `json:"id"`
+	Number                     int             `json:"number"`
+	Title                      string          `json:"title"`
+	Slug                       string          `json:"slug"`
+	Description                string          `json:"description"`
+	CreatedAt                  time.Time       `json:"createdAt"`
+	User                       *User           `json:"user"`
+	IsPublic                   bool            `json:"isPublic"`
+	EstimatedDateForCompletion *time.Time      `json:"estimatedDateForCompletion,omitemtpy"`
+	HasVoted                   bool            `json:"hasVoted"`
+	VotesCount                 int             `json:"votesCount"`
+	CommentsCount              int             `json:"commentsCount"`
+	Status                     enum.PostStatus `json:"status"`
+	Response                   *PostResponse   `json:"response,omitempty"`
+	Tags                       []string        `json:"tags"`
 }
 
 //VoteUser represents a user that voted on a post
@@ -52,11 +53,12 @@ type NewPost struct {
 
 // UpdatePost represents a request to edit an existing post
 type UpdatePost struct {
-	Number      int            `route:"number"`
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	IsPublic    bool           `json:"isPublic"`
-	Attachments []*ImageUpload `json:"attachments"`
+	Number                     int            `route:"number"`
+	Title                      string         `json:"title"`
+	Description                string         `json:"description"`
+	IsPublic                   bool           `json:"isPublic"`
+	EstimatedDateForCompletion time.Time      `json:"estimatedDateForCompletion"`
+	Attachments                []*ImageUpload `json:"attachments"`
 }
 
 // DeletePost represents a request to delete an existing post
